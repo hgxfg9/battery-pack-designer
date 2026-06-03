@@ -102,7 +102,7 @@ def build_design(request: DesignRequest | dict[str, Any] | None = None) -> dict[
     tab_strips, jump_wires = _build_tabs_and_jump_wires(grouped, request, spec.nominal_v)
     balance_leads = _build_balance_leads(tab_strips, request.series_count)
     weld_steps = _build_weld_steps(grouped, tab_strips, jump_wires, balance_leads)
-    metrics = _build_metrics(request, spec, used_cells)
+    metrics = _build_metrics(request, spec, placements, used_cells)
 
     result = DesignResult(
         request=serialize(request),
@@ -431,18 +431,24 @@ def _build_weld_steps(
     return steps
 
 
-def _build_metrics(request: DesignRequest, spec: Any, used_cells: list[CellPlacement]) -> DesignMetrics:
+def _build_metrics(
+    request: DesignRequest,
+    spec: Any,
+    placements: list[CellPlacement],
+    used_cells: list[CellPlacement],
+) -> DesignMetrics:
     total_capacity_ah = round(spec.capacity_ah * request.parallel_count, 3)
     total_voltage_v = round(spec.nominal_v * request.series_count, 3)
     total_energy_wh = round(total_capacity_ah * total_voltage_v, 3)
     total_weight_kg = round((spec.weight_g * len(used_cells)) / 1000, 3)
 
-    min_x = min(cell.x_mm for cell in used_cells)
-    max_x = max(cell.x_mm for cell in used_cells)
-    min_y = min(cell.y_mm for cell in used_cells)
-    max_y = max(cell.y_mm for cell in used_cells)
-    min_z = min(cell.z_mm for cell in used_cells)
-    max_z = max(cell.z_mm for cell in used_cells)
+    footprint_cells = placements or used_cells
+    min_x = min(cell.x_mm for cell in footprint_cells)
+    max_x = max(cell.x_mm for cell in footprint_cells)
+    min_y = min(cell.y_mm for cell in footprint_cells)
+    max_y = max(cell.y_mm for cell in footprint_cells)
+    min_z = min(cell.z_mm for cell in footprint_cells)
+    max_z = max(cell.z_mm for cell in footprint_cells)
     pack_width_mm = round((max_x - min_x) + spec.diameter_mm, 2)
     pack_depth_mm = round((max_y - min_y) + spec.diameter_mm, 2)
     pack_height_mm = round((max_z - min_z) + spec.height_mm, 2)
@@ -524,4 +530,3 @@ def _point_distance(first: tuple[float, float, float], second: tuple[float, floa
 
 def _distance(first: tuple[float, float, float], second: tuple[float, float, float]) -> float:
     return _point_distance(first, second)
-

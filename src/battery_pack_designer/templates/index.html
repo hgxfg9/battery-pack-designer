@@ -50,7 +50,7 @@
 
             <div class="two-col">
               <label>
-                <span>Placement / 摆放方式</span>
+                <span>Placement / 排布方式</span>
                 <select name="placement_mode">
                   <option value="rect">RECT</option>
                   <option value="honeycomb" selected>HONEYCOMB</option>
@@ -85,18 +85,18 @@
 
             <div class="two-col">
               <label>
-                <span>Series / S</span>
+                <span>Series / 串联 S</span>
                 <input type="number" min="1" max="99" name="series_count" value="{{ defaults.series_count }}">
               </label>
               <label>
-                <span>Parallel / P</span>
+                <span>Parallel / 并联 P</span>
                 <input type="number" min="1" max="99" name="parallel_count" value="{{ defaults.parallel_count }}">
               </label>
             </div>
 
             <div class="two-col">
               <label>
-                <span>Gap mm / 间隙</span>
+                <span>Gap mm / 间距</span>
                 <input type="number" step="0.1" min="0" max="30" name="gap_mm" value="{{ defaults.gap_mm }}">
               </label>
               <label>
@@ -118,7 +118,7 @@
                 </select>
               </label>
               <label>
-                <span>Orientation / 极性</span>
+                <span>Orientation / 极性方向</span>
                 <select name="orientation_mode">
                   <option value="alternating">Alternating</option>
                   <option value="same">Same</option>
@@ -235,4 +235,3 @@
     <script src="{{ url_for('static', filename='app.js') }}"></script>
   </body>
 </html>
-

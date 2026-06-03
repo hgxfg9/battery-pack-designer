@@ -77,7 +77,7 @@ python -m battery_pack_designer.desktop.app
 
 The desktop shell launches a local Flask server and embeds it inside PySide6 when `QtWebEngine` is available. If `QtWebEngine` is not installed, it falls back to the default browser.
 
-桌面版本会先启动本地 Flask 服务，再在 `QtWebEngine` 可用时嵌入到 PySide6 窗口中；如果 `QtWebEngine` 不可用，则自动退回默认浏览器。
+桌面版本会先启动本地 Flask 服务，再在 `QtWebEngine` 可用时嵌入到 PySide6 窗口中；如果 `QtWebEngine` 不可用，则自动回退到默认浏览器。
 
 ## API Example / API 示例
 

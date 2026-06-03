@@ -48,7 +48,10 @@ def create_app() -> Flask:
     @app.post("/api/design")
     def api_design():
         payload = request.get_json(silent=True) or request.form.to_dict()
-        design = build_design(parse_request(payload))
+        try:
+            design = build_design(parse_request(payload))
+        except ValueError as exc:
+            return jsonify({"ok": False, "error": str(exc)}), 400
         return jsonify(design)
 
     @app.get("/api/health")
@@ -69,4 +72,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

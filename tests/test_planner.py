@@ -51,3 +51,19 @@ def test_hole_mask_reduces_capacity():
     inactive = [cell for cell in design["cells"] if not cell["active"]]
     assert len(inactive) == 2
 
+
+def test_pack_envelope_uses_full_requested_layout():
+    design = build_design(
+        {
+            "cell_model": "18650",
+            "placement_mode": "rect",
+            "rows": 2,
+            "cols": 3,
+            "layers": 1,
+            "series_count": 1,
+            "parallel_count": 2,
+            "gap_mm": 2.0,
+        }
+    )
+    assert design["metrics"]["pack_width_mm"] == 59.8
+    assert design["metrics"]["pack_depth_mm"] == 39.2

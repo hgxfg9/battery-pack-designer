@@ -47,7 +47,7 @@ function renderSummary() {
     ["Voltage", `${metrics.total_voltage_v} V`],
     ["Energy", `${metrics.total_energy_wh} Wh`],
     ["Weight", `${metrics.total_weight_kg} kg`],
-    ["Envelope", `${metrics.pack_width_mm} × ${metrics.pack_depth_mm} × ${metrics.pack_height_mm} mm`],
+    ["Envelope", `${metrics.pack_width_mm} x ${metrics.pack_depth_mm} x ${metrics.pack_height_mm} mm`],
     ["Placement", `${request.placement_mode.toUpperCase()} / ${request.layers} layer(s)`],
     ["Route", selectedRoute.name],
     ["Difficulty", `${selectedRoute.difficulty} / 5`],
@@ -172,7 +172,7 @@ function currentHighlights() {
 }
 
 function renderTopView() {
-  const cells = state.design.cells.filter((cell) => cell.active || cell.used);
+  const cells = state.design.cells;
   const bounds = computeBounds(cells);
   const highlights = currentHighlights();
   const width = viewBoxSize.width;
@@ -207,8 +207,7 @@ function renderTopView() {
     return `<g><circle cx="${x}" cy="${y}" r="${radius}" fill="#32b66d" /><text x="${x + 10}" y="${y - 10}" font-size="12" fill="#266843">${lead.label}</text></g>`;
   });
 
-  const cellR = Math.max(8, diameter);
-  const scaleR = Math.min(28, Math.max(10, cellR / 1.1));
+  const scaleR = Math.min(28, Math.max(10, diameter / 1.1));
   const cellCircles = cells.map((cell) => {
     const [cx, cy] = scalePoint(cell.x_mm, cell.y_mm, bounds, width, height);
     const style = getCellStyle(cell);
@@ -323,8 +322,14 @@ function renderPseudo3D() {
   }
 
   for (const wire of state.design.jump_wires) {
-    const p1 = { x: 130 + wire.from_x_mm * 3.2 - wire.from_y_mm * 1.1, y: 300 - wire.from_z_mm * 1.9 - wire.from_y_mm * 1.2 - 90 };
-    const p2 = { x: 130 + wire.to_x_mm * 3.2 - wire.to_y_mm * 1.1, y: 300 - wire.to_z_mm * 1.9 - wire.to_y_mm * 1.2 - 90 };
+    const p1 = {
+      x: 130 + wire.from_x_mm * 3.2 - wire.from_y_mm * 1.1,
+      y: 300 - wire.from_z_mm * 1.9 - wire.from_y_mm * 1.2 - 90,
+    };
+    const p2 = {
+      x: 130 + wire.to_x_mm * 3.2 - wire.to_y_mm * 1.1,
+      y: 300 - wire.to_z_mm * 1.9 - wire.to_y_mm * 1.2 - 90,
+    };
     ctx.save();
     ctx.strokeStyle = highlights.wires.has(wire.id) ? "#f59e0b" : "#9345d4";
     ctx.lineWidth = 4;
@@ -339,24 +344,33 @@ function renderPseudo3D() {
 
 async function submitForm() {
   statusBadge.textContent = "Updating";
-  const formData = new FormData(form);
-  const payload = Object.fromEntries(formData.entries());
-  const response = await fetch("/api/design", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!response.ok) {
-    const errorText = await response.text();
+  warningBox.classList.add("hidden");
+  warningBox.textContent = "";
+
+  try {
+    const formData = new FormData(form);
+    const payload = Object.fromEntries(formData.entries());
+    const response = await fetch("/api/design", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      const errorPayload = await response.json().catch(async () => ({ error: await response.text() }));
+      statusBadge.textContent = "Error";
+      warningBox.classList.remove("hidden");
+      warningBox.textContent = errorPayload.error || "Request failed.";
+      return;
+    }
+    state.design = await response.json();
+    state.currentStep = 0;
+    statusBadge.textContent = "Ready";
+    render();
+  } catch (error) {
     statusBadge.textContent = "Error";
     warningBox.classList.remove("hidden");
-    warningBox.textContent = errorText;
-    return;
+    warningBox.textContent = error instanceof Error ? error.message : "Network error";
   }
-  state.design = await response.json();
-  state.currentStep = 0;
-  statusBadge.textContent = "Ready";
-  render();
 }
 
 function moveStep(delta) {
@@ -387,4 +401,3 @@ document.getElementById("next-step").addEventListener("click", () => moveStep(1)
 document.getElementById("play-step").addEventListener("click", () => togglePlay());
 
 render();
-
