@@ -3,12 +3,14 @@
 from __future__ import annotations
 
 import socket
-import subprocess
 import sys
 import time
 import webbrowser
-import os
-from pathlib import Path
+from threading import Thread
+
+from werkzeug.serving import make_server
+
+from ..web.app import create_app
 
 
 def _find_free_port() -> int:
@@ -17,26 +19,29 @@ def _find_free_port() -> int:
         return int(sock.getsockname()[1])
 
 
-def _start_server(port: int) -> subprocess.Popen[str]:
-    env_python = Path(sys.executable)
-    root = Path(__file__).resolve().parents[3]
-    env = os.environ.copy()
-    src_path = str(root / "src")
-    existing_path = env.get("PYTHONPATH", "")
-    env["PYTHONPATH"] = src_path if not existing_path else f"{src_path}{os.pathsep}{existing_path}"
-    command = [str(env_python), "-m", "battery_pack_designer.web.app", "--port", str(port)]
-    return subprocess.Popen(command, cwd=root, env=env)
+class _LocalServer(Thread):
+    def __init__(self, host: str, port: int) -> None:
+        super().__init__(daemon=True)
+        self._server = make_server(host, port, create_app(), threaded=True)
+
+    def run(self) -> None:
+        self._server.serve_forever()
+
+    def stop(self) -> None:
+        self._server.shutdown()
+        self._server.server_close()
 
 
 def main() -> None:
     port = _find_free_port()
-    server = _start_server(port)
+    server = _LocalServer("127.0.0.1", port)
+    server.start()
     url = f"http://127.0.0.1:{port}"
-    time.sleep(1.2)
+    time.sleep(1.0)
 
     try:
         from PySide6.QtCore import QUrl
-        from PySide6.QtWidgets import QApplication, QMainWindow
+        from PySide6.QtWidgets import QApplication, QLabel, QMainWindow, QVBoxLayout, QWidget
 
         try:
             from PySide6.QtWebEngineWidgets import QWebEngineView
@@ -46,7 +51,18 @@ def main() -> None:
         app = QApplication(sys.argv)
         if QWebEngineView is None:
             webbrowser.open(url)
-            print(f"Desktop shell fallback opened in browser: {url}")
+            fallback_window = QMainWindow()
+            fallback_window.setWindowTitle("Battery Pack Designer")
+            container = QWidget()
+            layout = QVBoxLayout(container)
+            message = QLabel(
+                f"Qt WebEngine is unavailable.\nThe planner was opened in your default browser:\n{url}"
+            )
+            message.setWordWrap(True)
+            layout.addWidget(message)
+            fallback_window.setCentralWidget(container)
+            fallback_window.resize(720, 180)
+            fallback_window.show()
             sys.exit(app.exec())
 
         view = QWebEngineView()
@@ -56,12 +72,9 @@ def main() -> None:
         window.resize(1440, 960)
         window.setCentralWidget(view)
         window.show()
-        exit_code = app.exec()
-        server.terminate()
-        sys.exit(exit_code)
+        sys.exit(app.exec())
     finally:
-        if server.poll() is None:
-            server.terminate()
+        server.stop()
 
 
 if __name__ == "__main__":

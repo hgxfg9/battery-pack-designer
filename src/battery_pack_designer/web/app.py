@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 from flask import Flask, jsonify, render_template, request
@@ -11,8 +12,18 @@ from ..cell_library import CELL_LIBRARY, DEFAULT_MODEL
 from ..planner import build_design, parse_request
 
 
+def _package_root() -> Path:
+    if getattr(sys, "frozen", False):
+        runtime_root = Path(getattr(sys, "_MEIPASS", Path(sys.executable).resolve().parent))
+        packaged_root = runtime_root / "battery_pack_designer"
+        if packaged_root.exists():
+            return packaged_root
+        return runtime_root
+    return Path(__file__).resolve().parents[1]
+
+
 def create_app() -> Flask:
-    package_root = Path(__file__).resolve().parents[1]
+    package_root = _package_root()
     app = Flask(
         __name__,
         template_folder=str(package_root / "templates"),
