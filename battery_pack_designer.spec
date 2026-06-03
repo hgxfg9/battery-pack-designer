@@ -5,10 +5,12 @@ from pathlib import Path
 
 project_root = Path.cwd()
 package_root = project_root / "src" / "battery_pack_designer"
+
 datas = [
     (str(package_root / "templates"), "battery_pack_designer/templates"),
     (str(package_root / "static"), "battery_pack_designer/static"),
 ]
+
 hiddenimports = [
     "PySide6.QtWebEngineCore",
     "PySide6.QtWebEngineWidgets",
@@ -33,8 +35,9 @@ pyz = PYZ(a.pure)
 exe = EXE(
     pyz,
     a.scripts,
+    a.binaries,
+    a.datas,
     [],
-    exclude_binaries=True,
     name="BatteryPackDesigner",
     debug=False,
     bootloader_ignore_signals=False,
@@ -46,14 +49,4 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-)
-
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.datas,
-    strip=False,
-    upx=True,
-    upx_exclude=[],
-    name="BatteryPackDesigner",
 )

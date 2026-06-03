@@ -7,10 +7,10 @@ __pycache__/
 .mypy_cache/
 dist/
 build/
+outputs/
 *.egg-info/
 .coverage
 htmlcov/
 .DS_Store
 Thumbs.db
 *.log
-

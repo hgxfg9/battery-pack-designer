@@ -1,85 +1,98 @@
-# Battery Pack Designer / 电池包规划器
+# Battery Pack Designer
 
-Battery Pack Designer is an open-source planning tool for cylindrical battery packs. It helps engineers preview pack layout, validate `S x P` topology, compare routing schemes, estimate tab-strip and jump-wire work, and walk through weld steps before building a real pack.
+Battery Pack Designer is a local planning tool for cylindrical battery packs. It helps you lay out cells, validate `SxP` combinations, compare routing options, review node grouping, and step through a welding sequence before building a pack.
 
-电池包规划器是一个面向圆柱电芯电池包的开源规划工具。它用于在实际焊接前预览电池包布局、校验 `S x P` 拓扑、对比布线方案、估算镍片与跳线工作量，并按步骤演示焊接流程。
+The project ships with:
 
-## Highlights / 项目亮点
+- a shared Python planning core
+- a Flask web interface
+- a PySide6 desktop wrapper
+- a Windows single-file build path based on PyInstaller
 
-- Shared Python planning core for both web and desktop entrypoints.
-- Built-in support for `14500`, `18350`, `18650`, `20700`, `21700`, `26650`, `32700`, `32140`, and `46800`.
-- Placement modes: `RECT`, `HONEYCOMB`, `STACK`, and `TRIANGLE`.
-- Topology validation for `S x P` against active slots after optional hole masking.
-- Five routing strategies with difficulty scoring, jump-wire counts, fold hints, and bus-length estimates.
-- Automatic node labeling for `B0` through `BS`, tab-strip grouping, and balance-lead anchor hints.
-- 2D top/front/side/exploded views plus an offline-friendly pseudo-3D preview.
-- PySide6 desktop shell that reuses the same local web experience.
+## What it does
 
-## Architecture / 架构说明
+- Supports common cylindrical cell formats such as `14500`, `18350`, `18650`, `20700`, `21700`, `26650`, `32700`, `32140`, and `46800`
+- Generates `RECT`, `HONEYCOMB`, `STACK`, and `TRIANGLE` placement layouts
+- Validates whether the requested `series_count * parallel_count` fits in the active slots
+- Compares multiple routing schemes and estimates difficulty, jump wires, folds, and bus length
+- Produces tab-strip grouping, balance lead anchors, and weld steps
+- Renders top, front, side, exploded, and pseudo-3D views
+
+## Project layout
 
 ```text
 src/
   battery_pack_designer/
-    cell_library.py      Built-in cylindrical cell database
-    models.py            Shared request/result dataclasses
-    planner.py           Core layout, routing, tab-strip, and weld-step logic
-    web/app.py           Flask server and JSON API
-    desktop/app.py       PySide6 desktop wrapper
-    templates/index.html Web UI
-    static/app.css       Styles
-    static/app.js        Rendering and interaction logic
+    cell_library.py
+    models.py
+    planner.py
+    web/app.py
+    desktop/app.py
+    templates/index.html
+    static/app.css
+    static/app.js
 tests/
-  test_planner.py        Smoke tests for the shared planning engine
+  test_planner.py
+  test_web_app.py
+battery_pack_designer.spec
 ```
 
-## Quick Start / 快速开始
+## Requirements
 
-### 1. Create a virtual environment / 创建虚拟环境
+- Python 3.10 or newer
+- Windows for the packaged desktop executable workflow
+- A local Python environment with `pip`
 
-```bash
-python -m venv .venv
-```
+## Install from source
+
+### 1. Create and activate a virtual environment
 
 Windows PowerShell:
 
 ```powershell
+python -m venv .venv
 .venv\Scripts\Activate.ps1
 ```
 
 macOS/Linux:
 
 ```bash
+python -m venv .venv
 source .venv/bin/activate
 ```
 
-### 2. Install dependencies / 安装依赖
+### 2. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 pip install -e .
 ```
 
-### 3. Run the web app / 启动 Web 版本
+If you want to run tests as well:
+
+```bash
+pip install -e .[dev]
+```
+
+## Run the application from source
+
+### Web interface
 
 ```bash
 python -m battery_pack_designer.web.app --host 127.0.0.1 --port 5000
 ```
 
-Then open [http://127.0.0.1:5000](http://127.0.0.1:5000).
+Open `http://127.0.0.1:5000` in a browser.
 
-随后在浏览器中访问 [http://127.0.0.1:5000](http://127.0.0.1:5000)。
-
-### 4. Run the desktop app / 启动桌面版本
+### Desktop interface
 
 ```bash
 python -m battery_pack_designer.desktop.app
 ```
 
-The desktop shell launches a local Flask server and embeds it inside PySide6 when `QtWebEngine` is available. If `QtWebEngine` is not installed, it falls back to the default browser.
+The desktop application starts a local Flask server on `127.0.0.1` and embeds it in a PySide6 window. If `QtWebEngine` is unavailable, it falls back to the system browser and keeps a small desktop window open with the local URL.
 
-桌面版本会先启动本地 Flask 服务，再在 `QtWebEngine` 可用时嵌入到 PySide6 窗口中；如果 `QtWebEngine` 不可用，则自动回退到默认浏览器。
-
-## API Example / API 示例
+## API example
 
 `POST /api/design`
 
@@ -100,31 +113,19 @@ The desktop shell launches a local Flask server and embeds it inside PySide6 whe
 }
 ```
 
-Response fields include:
+The response includes:
 
-- `metrics`: capacity, voltage, energy, weight, and pack envelope.
-- `cells`: per-cell placement and assigned electrical group.
-- `route_options`: alternative routing strategies and their scores.
-- `tab_strips`: node-level nickel strip groupings.
-- `jump_wires`: estimated jump-wire segments.
-- `balance_leads`: anchor hints for `B0 ... BS`.
-- `weld_steps`: step-by-step welding sequence for UI playback.
+- `metrics`
+- `cells`
+- `route_options`
+- `tab_strips`
+- `jump_wires`
+- `balance_leads`
+- `weld_steps`
 
-返回结果包含：
+## Hole mask format
 
-- `metrics`：容量、电压、能量、重量与包体尺寸。
-- `cells`：每个电芯的位置与串并联分组。
-- `route_options`：多种布线策略及其评分。
-- `tab_strips`：节点级镍片分组。
-- `jump_wires`：跳线段估算。
-- `balance_leads`：`B0 ... BS` 平衡线引出建议。
-- `weld_steps`：用于界面播放的焊接步骤序列。
-
-## Hole Mask Format / 异形空位格式
-
-To create custom empty slots, enter one `layer,row,col` triple per line:
-
-自定义挖空位置时，每行输入一组 `layer,row,col`：
+Use one `layer,row,col` triple per line:
 
 ```text
 1,2,3
@@ -132,79 +133,77 @@ To create custom empty slots, enter one `layer,row,col` triple per line:
 2,1,1
 ```
 
-This is useful for irregular enclosures, fixture offsets, structural ribs, or cable passages.
+This is useful for irregular pack shapes, fixture clearances, cable paths, or structural cutouts.
 
-这适用于异形外壳、治具避让、加强筋位置以及走线通道预留。
+## Testing
 
-## Testing / 测试
+macOS/Linux:
 
 ```bash
 PYTHONPATH=src pytest
 ```
 
-On Windows PowerShell:
+Windows PowerShell:
 
 ```powershell
 $env:PYTHONPATH = "src"
 pytest
 ```
 
-## Dependency Notes / 依赖说明
+## Build a single-file Windows executable
 
-- `Flask`: local HTTP server and JSON API for the browser-based planner.
-- `PySide6`: desktop shell for Windows-friendly packaging and future native controls.
-- `pytest`: optional development dependency for smoke tests.
+The repository includes a `PyInstaller` spec file that bundles the desktop application, Flask templates, static assets, and Qt WebEngine dependencies into a single `exe`.
 
-## Packaging Direction / 打包方向
-
-- Web: deploy the Flask app behind a lightweight Python runtime.
-- Desktop: package with `PyInstaller` or `Nuitka` into a Windows executable.
-- Core: keep `planner.py` and data models framework-agnostic so desktop and web remain aligned.
-
-## Current Scope / 当前范围
-
-This repository ships a strong MVP, not a finished production CAD system. The current implementation focuses on:
-
-当前仓库提供的是高质量首版，不是完整的生产级 CAD 系统。目前重点完成：
-
-- shared computation model,
-- route comparison,
-- node and weld planning,
-- multi-view visualization,
-- bilingual project documentation,
-- a publish-ready open-source repository layout.
-
-Planned next steps:
-
-后续建议优先补强：
-
-- true Three.js 3D geometry,
-- editable drag-and-drop cell placement,
-- export to DXF/SVG/CSV,
-- richer pack templates and user presets,
-- real EXE packaging workflow and CI pipelines.
-
-## GitHub Publishing / 发布到 GitHub
-
-Recommended repository name:
-
-建议仓库名：
-
-```text
-battery-pack-designer
-```
-
-Suggested commands:
-
-建议命令：
+### 1. Install build dependencies
 
 ```bash
-git init
-git add .
-git commit -m "Initial MVP for Battery Pack Designer"
-gh repo create battery-pack-designer --public --source=. --remote=origin --push
+pip install -r requirements.txt
+pip install pyinstaller
+pip install -e .
 ```
 
-If you prefer another repository name or organization, replace the final command accordingly.
+### 2. Build the executable
 
-如果你想使用其他仓库名或组织名，只需替换最后一条命令即可。
+Run this from the repository root:
+
+```bash
+python -m PyInstaller --noconfirm --clean battery_pack_designer.spec
+```
+
+Expected output:
+
+```text
+dist/BatteryPackDesigner.exe
+```
+
+### 3. Smoke-test the packaged executable
+
+After the build completes, launch the executable once and confirm that:
+
+- the desktop window opens
+- the planner UI loads
+- the app can render the default design
+
+If `QtWebEngine` cannot be loaded on the target machine, the executable should open the planner in the default browser and show the fallback window with the local URL.
+
+## Create a release artifact
+
+If you want to publish a release manually, a straightforward Windows flow looks like this:
+
+```powershell
+python -m PyInstaller --noconfirm --clean battery_pack_designer.spec
+Get-FileHash .\dist\BatteryPackDesigner.exe -Algorithm SHA256
+```
+
+You can then upload:
+
+- `dist/BatteryPackDesigner.exe`
+- a checksum file such as `BatteryPackDesigner.exe.sha256.txt`
+
+## Dependency Notes
+
+- `Flask` serves the local UI and JSON API
+- `PySide6` provides the desktop shell
+- `PySide6.QtWebEngine` embeds the local planner in the desktop window
+- `pytest` is used for the small regression test suite
+- `PyInstaller` is used for the Windows desktop build
