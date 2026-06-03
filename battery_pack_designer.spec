@@ -18,7 +18,7 @@ hiddenimports = [
 
 
 a = Analysis(
-    ["src/battery_pack_designer/desktop/app.py"],
+    ["desktop_main.py"],
     pathex=["src"],
     binaries=[],
     datas=datas,

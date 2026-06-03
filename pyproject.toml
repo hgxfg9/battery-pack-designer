@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "battery-pack-designer"
-version = "0.1.1"
+version = "0.1.2"
 description = "Battery pack layout, routing, tab-strip, and weld-step planner for cylindrical cells."
 readme = "README.md"
 requires-python = ">=3.10"
